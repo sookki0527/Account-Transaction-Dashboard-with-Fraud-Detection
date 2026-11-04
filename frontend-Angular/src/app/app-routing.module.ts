@@ -3,11 +3,14 @@ import { RouterModule, Routes } from '@angular/router';
 import {AccountListComponent} from "./account-list/account-list.component"
 import {DashboardComponent} from "./dashboard/dashboard.component"
 import {TransactionListComponent} from "./transaction-list/transaction-list.component";
+import {AuthComponent} from "./auth/auth.component";
+import {AuthGuard} from "./service/auth.guard";
 const routes: Routes = [
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: DashboardComponent },
-  { path: 'accounts', component: AccountListComponent },
-  { path: 'transfer', component: TransactionListComponent}
+  { path: '', redirectTo: '/auth', pathMatch: 'full' },
+  { path: 'auth', component: AuthComponent },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
+  { path: 'accounts', component: AccountListComponent, canActivate: [AuthGuard] },
+  { path: 'transfer', component: TransactionListComponent, canActivate: [AuthGuard] }
   // 다른 경로들...
 ];
 

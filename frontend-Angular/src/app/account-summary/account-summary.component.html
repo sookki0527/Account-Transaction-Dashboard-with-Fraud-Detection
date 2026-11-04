@@ -13,17 +13,20 @@
     </p>
 
     <div class="d-flex gap-2 mt-2">
-      <input type="number" [(ngModel)]="amountToAdd" placeholder="Enter amount" />
-      <button class="btn btn-outline-success btn-sm" (click) = "increaseBalance()">
+      <input type="number" min="0" step="0.01" [(ngModel)]="amountToAdd" placeholder="Enter amount" />
+      <button class="btn btn-outline-success btn-sm" (click)="increaseBalance()" [disabled]="transactionInProgress">
         Deposit
       </button>
-      <input type="number" [(ngModel)]="amountToSubtract" placeholder="Enter amount" />
-      <button class="btn btn-outline-warning btn-sm" (click) = "decreaseBalance()">
+      <input type="number" min="0" step="0.01" [(ngModel)]="amountToSubtract" placeholder="Enter amount" />
+      <button class="btn btn-outline-warning btn-sm" (click)="decreaseBalance()" [disabled]="transactionInProgress">
         Withdraw
       </button>
       <button class="btn btn-outline-primary btn-sm ms-auto" (click)="onTransferClick()">
         💸 Transfer
       </button>
+    </div>
+    <div class="alert alert-danger mt-3 py-2 px-3" *ngIf="transactionError">
+      {{ transactionError }}
     </div>
     <div class="alert alert-info mt-3 py-2 px-3" *ngIf="account?.recentTransaction">
       <strong>Recent:</strong> {{ account?.recentTransaction }}

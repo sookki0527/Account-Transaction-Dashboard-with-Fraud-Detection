@@ -1,7 +1,0 @@
-flask
-pandas
-sqlalchemy
-pymysql
-joblib
-scikit-learn
-python-dotenv

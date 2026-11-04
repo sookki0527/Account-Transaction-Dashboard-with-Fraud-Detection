@@ -3,6 +3,7 @@ import {Account} from "../model/account.model";
 import {NotificationService} from "../service/notification.service";
 import {AccountService} from "../service/account.service";
 import {Notification} from "../model/notification.model";
+import {Router} from "@angular/router";
 @Component({
   selector: 'app-account-list',
   templateUrl: './account-list.component.html',
@@ -13,10 +14,18 @@ export class AccountListComponent implements OnInit{
 
   accounts: Account[] = [];
   latestNotification: Notification | null = null;
-  constructor(private accountService :AccountService, private notificationService: NotificationService) {
+  constructor(
+    private accountService: AccountService,
+    private notificationService: NotificationService,
+    private router: Router
+  ) {
   }
   ngOnInit(){
-      this.accountService.getAccounts("user1").subscribe(data =>{
+      const userId = this.getUserId();
+      if (!userId) {
+        return;
+      }
+      this.accountService.getAccounts(userId).subscribe(data =>{
         this.accounts = data;
       })
     this.notificationService.getNotificationStream().subscribe(notif =>{
@@ -31,20 +40,6 @@ export class AccountListComponent implements OnInit{
     }
 
 
-  handleIncrease(event: { id: number, newBalance: number }) {
-    this.accountService.increaseBalance(event.id, event.newBalance).subscribe({
-      next: () => console.log('Balance increased.'),
-      error: err => console.error('Error:', err)
-    });
-  }
-
-  handleDecrease(event: { id: number, newBalance: number }) {
-    this.accountService.decreaseBalance(event.id, event.newBalance).subscribe({
-      next: () => console.log('Balance decreased.'),
-      error: err => console.error('Error:', err)
-    });
-  }
-
   selectedAccountId: number | null = null;
 
   toggleForm(accountId: number) {
@@ -55,11 +50,23 @@ export class AccountListComponent implements OnInit{
     }
   }
   refreshAccounts() {
-    this.accountService.getAccounts('user1').subscribe(accounts => {
+    const userId = this.getUserId();
+    if (!userId) {
+      return;
+    }
+    this.accountService.getAccounts(userId).subscribe(accounts => {
       this.accounts = accounts;
     });
   }
 
+  private getUserId(): string | null {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      void this.router.navigate(['/auth']);
+      return null;
+    }
+    return userId;
+  }
 
   protected readonly String = String;
 }

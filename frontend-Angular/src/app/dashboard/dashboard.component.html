@@ -1,5 +1,10 @@
 <div class="container my-5 p-4 bg-light rounded shadow-sm">
-  <h2 class="mb-4 text-center text-primary">Welcome, {{ userName }}!</h2>
+  <h2 class="mb-2 text-center text-primary">Welcome, {{ userName }}!</h2>
+  <p class="text-center mb-4">
+    <span class="badge" [ngClass]="isAdmin ? 'text-bg-danger' : 'text-bg-secondary'">
+      isAdmin: {{ isAdmin }}
+    </span>
+  </p>
 
   <div class="row text-center mb-4 justify-content-center">
     <div class="col-md-4 mb-3 mb-md-0">
@@ -42,5 +47,6 @@
   <div class="d-flex justify-content-center gap-3">
     <button class="btn btn-outline-primary px-4" (click)="viewAccounts()">💼 View Accounts</button>
     <button class="btn btn-outline-success px-4" (click)="makeTransfer()">💸 Transfer history</button>
+    <button class="btn btn-outline-secondary px-4" routerLink="/auth">Log Out</button>
   </div>
 </div>

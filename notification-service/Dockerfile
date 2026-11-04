@@ -1,5 +1,4 @@
-FROM openjdk:17-jdk-alpine
-
+FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
 
 COPY target/notification-service-1.0-SNAPSHOT.jar app.jar

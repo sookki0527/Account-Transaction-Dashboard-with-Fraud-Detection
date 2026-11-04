@@ -18,7 +18,7 @@ public class TransactionDto {
     private String userId;
     private Long fromAccountId;
     private Long toAccountId;
-   private BigDecimal amount;
+    private BigDecimal amount;
     private String type;
     private LocalDateTime date;
 }

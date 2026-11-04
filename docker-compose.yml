@@ -8,7 +8,7 @@ services:
       MYSQL_ROOT_PASSWORD: passwordForMySQL8.1
       MYSQL_DATABASE: main_db
     ports:
-      - "3306:3306"
+      - "3307:3306"
     networks:
       - backend
     volumes:
@@ -38,6 +38,9 @@ services:
       - .env
 
   transaction-service:
+    command:
+      - "--grpc.client.fds-service.address=static://fraud-detection-service:9090"
+      - "--grpc.client.fds-service.negotiation-type=PLAINTEXT"
     container_name: transaction-service
     image: transaction-service:latest
     build:
@@ -48,6 +51,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: development
       MYSQL_DATABASE: transaction_db
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
     depends_on:
       - kafka
       - mysql
@@ -73,7 +78,19 @@ services:
       - backend
     env_file:
       - .env
-
+  user-service:
+    image: user-service:latest
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    environment:
+      SERVER_PORT: 8084
+    ports:
+      - "8084:8084"
+    networks:
+      - backend
+    env_file:
+      - .env
   fraud-detection-service:
     container_name: fraud-detection-service
     image: fraud-detection-service:latest
@@ -84,6 +101,8 @@ services:
       - "8085:8085"
     environment:
       SPRING_PROFILES_ACTIVE: development
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
     depends_on:
       - kafka
       - mysql
@@ -97,18 +116,6 @@ services:
       - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
-    networks:
-      - backend
-  flask:
-    container_name: flask
-    image: flask:latest
-    build:
-      context: ./FlaskPython
-      dockerfile: Dockerfile
-    env_file:
-      - .env
-    ports:
-      - "5000:5000"
     networks:
       - backend
   kafka:
@@ -143,7 +150,18 @@ services:
       - "6379:6379"
     networks:
       - backend
+  redisinsight:
+    image: redis/redisinsight:latest
+    ports:
+      - "127.0.0.1:5540:5540"
+    networks:
+      - backend
+    volumes:
+      - redisinsight-data:/data
 
 networks:
   backend:
     driver: bridge
+
+volumes:
+    redisinsight-data:

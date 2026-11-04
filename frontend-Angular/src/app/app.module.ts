@@ -12,6 +12,7 @@ import { AccountListComponent } from './account-list/account-list.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
 import { TransactionFormComponent } from './transaction-form/transaction-form.component';
 import {FormsModule} from "@angular/forms";
+import {AuthComponent} from "./auth/auth.component";
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import {FormsModule} from "@angular/forms";
      AccountSummaryComponent,
      AccountListComponent,
      TransactionListComponent,
-     TransactionFormComponent
+     TransactionFormComponent,
+     AuthComponent
   ],
     imports: [
         BrowserModule,
@@ -34,4 +36,3 @@ import {FormsModule} from "@angular/forms";
   bootstrap: [AppComponent]
 })
 export class AppModule { }
-

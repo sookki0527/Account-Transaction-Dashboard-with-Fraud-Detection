@@ -12,7 +12,8 @@ import {AiNotificationService} from "../service/ai-notification.service";
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit{
-  userName = 'Michelle';
+  userName = localStorage.getItem('userId') || '';
+  isAdmin = localStorage.getItem('isAdmin') === 'true';
   total$: Observable<number> | undefined;
   accounts: Account[] = [];
 
@@ -25,7 +26,7 @@ export class DashboardComponent implements OnInit{
   ngOnInit() {
 
     this.total$ = this.accountService.totalBalance$;
-    this.accountService.getAccounts('user1').subscribe(data => {
+    this.accountService.getAccounts(this.userName).subscribe(data => {
       this.accounts = data;
       this.accountService.updateTotalBalance(data);
     });

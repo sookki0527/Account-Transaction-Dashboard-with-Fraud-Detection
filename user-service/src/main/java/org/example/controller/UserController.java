@@ -23,21 +23,23 @@ public class UserController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<Map<String, Object>> register(@RequestBody RegisterRequest request) {
         System.out.println("register tried with:  "+ request.getUsername());
         userService.register(request);
-        Map<String, String> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
         response.put("message", "User registered successfully");
+        response.put("isAdmin", false);
 
         return ResponseEntity.ok(response);
     }
 
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request) {
-        String token = userService.login(request.getUsername(), request.getPassword());
-        Map<String, String> body = new HashMap<>();
-        body.put("token", token);
+    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
+        UserService.LoginResult result = userService.login(request.getUsername(), request.getPassword());
+        Map<String, Object> body = new HashMap<>();
+        body.put("token", result.token());
+        body.put("isAdmin", result.isAdmin());
         return ResponseEntity.ok(body);
     }
 

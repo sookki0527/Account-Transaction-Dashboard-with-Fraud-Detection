@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class TransferRequest {
+    private Long transactionId;
     private String userId;
     private Long fromAccountId;
     private Long toAccountId;
