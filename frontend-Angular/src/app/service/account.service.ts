@@ -22,12 +22,4 @@ export class AccountService {
   }
 
 
-  increaseBalance(accountId: number, amount: number) {
-    return this.http.put(`${this.url}/account/${accountId}/deposit`, { balance: amount });
-  }
-
-  decreaseBalance(accountId: number, amount: number) {
-    return this.http.put(`${this.url}/account/${accountId}/withdraw`, { balance: amount });
-  }
-
 }

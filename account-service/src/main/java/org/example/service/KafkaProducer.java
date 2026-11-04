@@ -1,6 +1,5 @@
 package org.example.service;
-
-import org.example.dto.UpdateBalanceRequest;
+import org.example.dto.TransferRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,7 @@ public class KafkaProducer {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    public void sendTransferNotification(UpdateBalanceRequest request){
+    public void sendTransferNotification(TransferRequest request){
         kafkaTemplate.send("account-topic", request);
     }
 }

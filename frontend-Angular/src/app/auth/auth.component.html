@@ -1,14 +1,12 @@
 <main class="auth-page">
   <section class="auth-card" aria-labelledby="auth-title">
     <a class="brand" routerLink="/auth" aria-label="Account Dashboard login">
-      <span class="brand-mark">A</span>
+      <span class="brand-mark">Bank</span>
       <span>Account Dashboard</span>
     </a>
-
-    <h1 id="auth-title">{{ mode === 'login' ? '다시 만나 반가워요' : '계정 만들기' }}</h1>
-    <p class="subtitle">
-      {{ mode === 'login' ? '계정에 로그인해 거래 내역을 확인하세요.' : '안전하게 계정을 만들고 시작하세요.' }}
-    </p>
+<!-- 
+   <h1 id="auth-title">{{ mode === 'login' ? '아이디 로그인' : '계정 만들기' }}</h1>
+   -->
 
     <div class="auth-tabs" role="tablist" aria-label="인증 방식 선택">
       <button

@@ -3,6 +3,6 @@ WORKDIR /app
 
 COPY target/notification-service-1.0-SNAPSHOT.jar app.jar
 
-EXPOSE 8082
+EXPOSE 8083
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

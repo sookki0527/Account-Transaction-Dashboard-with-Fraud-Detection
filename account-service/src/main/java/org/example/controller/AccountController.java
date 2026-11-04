@@ -2,7 +2,7 @@ package org.example.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.dto.AccountDto;
-import org.example.dto.UpdateBalanceRequest;
+import org.example.dto.TransferRequest;
 import org.example.entity.Account;
 import org.example.repository.AccountRepository;
 import org.example.service.AccountService;
@@ -41,12 +41,12 @@ public class AccountController {
     @PutMapping("/account/{accountId}/deposit")
     public ResponseEntity<Void> increaseAccount(
             @PathVariable("accountId") Long accountId,
-            @RequestBody UpdateBalanceRequest request
+            @RequestBody TransferRequest request
     ) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
-        account.setBalance(request.getBalance());
+        account.setBalance(request.getAmount().add(account.getBalance()));
         accountRepository.save(account);
         kafkaProducer.sendTransferNotification(request);
         return ResponseEntity.ok().build();
@@ -56,12 +56,12 @@ public class AccountController {
     @PutMapping("/account/{accountId}/withdraw")
     public ResponseEntity<Void> decreaseAccount(
             @PathVariable("accountId") Long accountId,
-            @RequestBody UpdateBalanceRequest request
+            @RequestBody TransferRequest request
     ) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
-        account.setBalance(request.getBalance());
+        account.setBalance(account.getBalance().subtract(request.getAmount()));
         accountRepository.save(account);
         kafkaProducer.sendTransferNotification(request);
         return ResponseEntity.ok().build();

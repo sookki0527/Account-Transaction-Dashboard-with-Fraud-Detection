@@ -3,12 +3,13 @@ package org.example.service;
 import org.example.dto.NotificationResponse;
 
 import org.example.dto.TransferRequest;
-import org.example.dto.UpdateBalanceRequest;
+import org.example.dto.DepositRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 
 
 @Service
@@ -20,11 +21,20 @@ public class KafkaConsumer {
         this.messagingTemplate = messagingTemplate;
     }
 
-    @KafkaListener(topics = "transfer-topic", groupId = "notif-group")
-    public void listen(TransferRequest event){
+    @KafkaListener(topics = "account-topic", groupId = "notif-group")
+    public void listen(DepositRequest event) {
+        String eventType = event.getType() == null
+                ? ""
+                : event.getType().trim().toUpperCase(Locale.ROOT);
+        String typed = switch (eventType) {
+            case "DEPOSIT" -> "deposited";
+            case "WITHDRAW", "WITHDRAWAL" -> "withdrawn";
+            default -> throw new IllegalArgumentException(
+                    "Unsupported account event type: " + event.getType());
+        };
         NotificationResponse notif = new NotificationResponse(
-                "transfer",
-                "💸 $" + event.getAmount() + " transferred.",
+                "account",
+                "✅ $" + event.getAmount() + " " + typed + ".",
                 "Just Now"
         );
         System.out.println("✅ Consumed Kafka message: " + notif);
@@ -32,11 +42,11 @@ public class KafkaConsumer {
         messagingTemplate.convertAndSend("/topic/notifications", notif);
     }
 
-    @KafkaListener(topics = "account-topic", groupId = "notif-group")
-    public void listen(UpdateBalanceRequest event){
+    @KafkaListener(topics = "transfer-topic", groupId = "notif-group")
+    public void listening(TransferRequest event){
         NotificationResponse notif = new NotificationResponse(
                 "account",
-                "$" + event.getBalance()+ " is " + event.getType() + " from account" + event.getAccountId(),
+                "$" + String.valueOf(event.getAmount()) + " is transferred" + " from account " + String.valueOf(event.getFromAccountId()) + " to account " + String.valueOf(event.getToAccountId()),
                 "Just Now"
         );
         System.out.println("✅ Consumed Kafka message: " + notif);

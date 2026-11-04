@@ -19,14 +19,27 @@ export class NotificationService {
       reconnectDelay: 5000
     });
 
-    this.stompClient.onConnect = frame => {
-      console.log('Connected: ' + frame);
-      this.stompClient.subscribe('/topic/notifications', (message: IMessage) => {
+   this.stompClient.onConnect = frame => {
+  console.log('Connected!!', frame);
+
+  this.stompClient.subscribe(
+    '/topic/notifications',
+    (message: IMessage) => {
+      console.log('📩 수신 원문:', message.body);
+
+      try {
         const notif: Notification = JSON.parse(message.body);
-        this.notifications$.next(notif);
+
         console.log('🔔 Notification:', notif);
-      });
-    };
+        this.notifications$.next(notif);
+      } catch (error) {
+        console.error('알림 처리 실패:', error);
+      }
+    }
+  );
+
+  console.log('구독 요청 보냄: /topic/notifications');
+};
 
     this.stompClient.activate();
   }

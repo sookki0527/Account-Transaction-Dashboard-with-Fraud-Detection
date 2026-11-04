@@ -21,6 +21,7 @@ export class TransactionService  {
   }
 
   sendDeposit(tx: Deposit): Observable<any> {
+    console.log("Sending deposit request: ", tx);
     return this.http.post(`${this.url}/transfer/deposit`, tx);
   }
 

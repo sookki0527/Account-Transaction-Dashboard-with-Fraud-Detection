@@ -1,6 +1,7 @@
 package org.example.service;
 
 import org.example.dto.TransferRequest;
+import org.example.dto.DepositRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -15,5 +16,9 @@ public class KafkaProducer {
 
     public void sendTransferNotification(TransferRequest request){
         kafkaTemplate.send("transfer-topic", request);
+    }
+
+    public void sendDepositNotification(DepositRequest request){
+        kafkaTemplate.send("account-topic", request);
     }
 }

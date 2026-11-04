@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.List;
 
@@ -104,8 +104,17 @@ public class TransferService {
                 to.setBalance(to.getBalance().add(request.getAmount()));
 
             
-                restTemplate.put(ACCOUNT_SERVICE_BASE_URL + "/" + request.getFromAccountId() + "/withdraw", from);
-                restTemplate.put(ACCOUNT_SERVICE_BASE_URL + "/" + request.getToAccountId() + "/deposit", to);
+                var body = Map.of("amount", request.getAmount());
+
+                restTemplate.put(
+                    ACCOUNT_SERVICE_BASE_URL + "/" + request.getFromAccountId() + "/withdraw",
+                    body
+                );
+
+                restTemplate.put(
+                    ACCOUNT_SERVICE_BASE_URL + "/" + request.getToAccountId() + "/deposit",
+                    body
+                );
 
                 Transaction transaction = Transaction.builder()
                         .id(request.getTransactionId())
@@ -162,17 +171,20 @@ public class TransferService {
             throw new RuntimeException("FDS Service is unavailable", e);
         }
 
-
+       
         Account account = restTemplate.getForObject(
                 ACCOUNT_SERVICE_BASE_URL + "/" + request.getAccountId(), Account.class
         );
 
         account.setBalance(account.getBalance().add(request.getAmount()));
 
-        restTemplate.put(ACCOUNT_SERVICE_BASE_URL + "/" + request.getAccountId() + "/deposit", account);
+        var body = Map.of("amount", request.getAmount());
+
+        restTemplate.put(ACCOUNT_SERVICE_BASE_URL + "/" + request.getAccountId() + "/deposit", body);
 
         Transaction transaction = Transaction.builder()
                 .userId(request.getUserId())
+                .fromAccountId(request.getAccountId())
                 .toAccountId(request.getAccountId())
                 .amount(request.getAmount())
                 .date(request.getDate())
@@ -180,7 +192,7 @@ public class TransferService {
                 .build();
 
         transferRepository.save(transaction);
-
+        kafkaProducer.sendDepositNotification(request);
     } 
     
 
@@ -204,6 +216,7 @@ public class TransferService {
             throw new RuntimeException("FDS Service is unavailable", e);
         }
 
+
         Account account = restTemplate.getForObject(
                 ACCOUNT_SERVICE_BASE_URL + "/" + request.getAccountId(), Account.class
         );
@@ -213,7 +226,24 @@ public class TransferService {
         }
 
         account.setBalance(account.getBalance().subtract(request.getAmount()));
-        restTemplate.put(ACCOUNT_SERVICE_BASE_URL + "/" + request.getAccountId() + "/withdraw", account);
+        var body = Map.of("amount", request.getAmount());
+
+        restTemplate.put(
+                    ACCOUNT_SERVICE_BASE_URL + "/" + request.getAccountId() + "/withdraw",
+                    body
+                );
+
+        
+        Transaction transaction = Transaction.builder()
+                .userId(request.getUserId())
+                .fromAccountId(request.getAccountId())
+                .toAccountId(request.getAccountId())
+                .amount(request.getAmount())
+                .date(request.getDate())
+                .type("WITHDRAWAL")
+                .build();
+        transferRepository.save(transaction);
+        kafkaProducer.sendDepositNotification(request);
     }   
 
 
