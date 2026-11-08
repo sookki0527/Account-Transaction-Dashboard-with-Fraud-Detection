@@ -39,7 +39,7 @@ public class KafkaConsumer {
         );
         System.out.println("✅ Consumed Kafka message: " + notif);
 
-        messagingTemplate.convertAndSend("/topic/notifications", notif);
+        messagingTemplate.convertAndSendToUser(event.getUserId(), "/topic/notifications",notif);
     }
 
     @KafkaListener(topics = "transfer-topic", groupId = "notif-group")
@@ -51,8 +51,9 @@ public class KafkaConsumer {
         );
         System.out.println("✅ Consumed Kafka message: " + notif);
 
-        messagingTemplate.convertAndSend("/topic/notifications", notif);
+        messagingTemplate.convertAndSendToUser(event.getUserId(), "/topic/notifications",notif);
     }
+
 
     @KafkaListener(topics = "ai-topic", groupId = "notif-group")
     public void listen(String message){

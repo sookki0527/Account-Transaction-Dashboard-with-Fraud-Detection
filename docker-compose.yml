@@ -65,8 +65,8 @@ services:
     container_name: notification-service
     image: notification-service:latest
     build:
-      context: ./notification-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: notification-service/Dockerfile
     ports:
       - "8083:8083"
     environment:

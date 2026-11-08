@@ -7,6 +7,8 @@ import org.example.entity.User;
 import org.example.repository.UserRepository;
 import org.example.security.JwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 
 
@@ -36,10 +38,14 @@ public class UserService {
     public LoginResult login(String username, String password) {
         System.out.println("login with user:" + username);
         User user = userRepository.findByUsername(username);
-        List<RoleDto> roles = user.getRoles().stream().map(role -> new RoleDto(role.getName())).toList();
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Invalid username or password");
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid username or password"
+            );
         }
+
+        List<RoleDto> roles = user.getRoles().stream().map(role -> new RoleDto(role.getName())).toList();
 
         boolean isAdmin = roles.stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getRoleName()));
         String token = jwtUtil.generateToken(user.getUsername(), roles);

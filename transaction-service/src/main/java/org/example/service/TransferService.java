@@ -126,8 +126,11 @@ public class TransferService {
                         .type(request.getType())
                         .build();
                 
-                transferRepository.save(transaction);
+                
                 kafkaProducer.sendTransferNotification(request);
+                Transaction saved = transferRepository.save(transaction);
+
+                String transactionId = String.valueOf(saved.getId());
 
                 System.out.println("kafka produced " + request);
                 System.out.println("transaction saved " + transaction);
@@ -191,7 +194,9 @@ public class TransferService {
                 .type("DEPOSIT")
                 .build();
 
-        transferRepository.save(transaction);
+      
+        Transaction saved = transferRepository.save(transaction);
+        String transactionId = String.valueOf(saved.getId());
         kafkaProducer.sendDepositNotification(request);
     } 
     
@@ -242,7 +247,8 @@ public class TransferService {
                 .date(request.getDate())
                 .type("WITHDRAWAL")
                 .build();
-        transferRepository.save(transaction);
+        Transaction saved = transferRepository.save(transaction);
+        String transactionId = String.valueOf(saved.getId());      
         kafkaProducer.sendDepositNotification(request);
     }   
 
