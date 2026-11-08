@@ -117,9 +117,6 @@ public class TransferConcurrencyTest {
 
 
     
-
-
-    
     @Test
     void tenUsersTransferToSameAccount() throws Exception {
 
@@ -245,6 +242,9 @@ public class TransferConcurrencyTest {
             executor.shutdownNow();
         }
 }
+
+
+
 
     private String login(String username, String password)
             throws Exception {
