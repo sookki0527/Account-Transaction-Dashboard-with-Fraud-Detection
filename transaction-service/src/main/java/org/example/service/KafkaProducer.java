@@ -1,7 +1,6 @@
 package org.example.service;
 
-import org.example.dto.TransferRequest;
-import org.example.dto.DepositRequest;
+import org.example.dto.TransferEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -14,11 +13,11 @@ public class KafkaProducer {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    public void sendTransferNotification(TransferRequest request){
-        kafkaTemplate.send("transfer-topic", request);
+    public void sendTransferNotification(TransferEvent event){
+        kafkaTemplate.send("transfer-topic", event);
     }
 
-    public void sendDepositNotification(DepositRequest request){
-        kafkaTemplate.send("account-topic", request);
+    public void sendDepositNotification(TransferEvent event){
+        kafkaTemplate.send("account-topic", event);
     }
 }

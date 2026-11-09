@@ -9,6 +9,7 @@ import org.example.grpc.fds.FdsVerifyRequest;
 import org.example.grpc.fds.FdsVerifyResponse;
 
 import org.example.dto.TransactionDto;
+import org.example.dto.TransferEvent;
 import org.example.dto.TransferRequest;
 import org.example.entity.Transaction;
 import org.example.repository.TransferRepository;
@@ -19,6 +20,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -74,13 +76,13 @@ public class TransferService {
         RLock lock2 = redissonClient.getLock(secondLockKey);
 
         try {
-            // 락 획득 대기 시간(Wait Time) 3초, 락 자동 해제 시간(Lease Time) 5초
-            boolean isLocked = lock1.tryLock(3, 5, TimeUnit.SECONDS);
+            // Use Redisson's watchdog lease so a slow transfer cannot outlive its lock.
+            boolean isLocked = lock1.tryLock(30, TimeUnit.SECONDS);
             if (!isLocked) {
                 throw new IllegalStateException("Could not acquire lock for first account");
             }
 
-            boolean isLocked2 = lock2.tryLock(3, 5, TimeUnit.SECONDS);
+            boolean isLocked2 = lock2.tryLock(30, TimeUnit.SECONDS);
             if (!isLocked2) {
                 lock1.unlock(); 
                 throw new IllegalStateException("Could not acquire lock for second account");
@@ -127,12 +129,21 @@ public class TransferService {
                         .build();
                 
                 
-                kafkaProducer.sendTransferNotification(request);
+                
                 Transaction saved = transferRepository.save(transaction);
 
                 String transactionId = String.valueOf(saved.getId());
+                TransferEvent event = new TransferEvent(
+                        saved.getId(),
+                        saved.getUserId(),
+                        saved.getFromAccountId(),
+                        saved.getToAccountId(),
+                        saved.getAmount(),
+                        Instant.now()
+                );
 
-                System.out.println("kafka produced " + request);
+                kafkaProducer.sendTransferNotification(event);
+                System.out.println("kafka produced " + event);
                 System.out.println("transaction saved " + transaction);
 
                 
@@ -197,7 +208,16 @@ public class TransferService {
       
         Transaction saved = transferRepository.save(transaction);
         String transactionId = String.valueOf(saved.getId());
-        kafkaProducer.sendDepositNotification(request);
+        TransferEvent event = new TransferEvent(
+                saved.getId(),
+                saved.getUserId(),
+                saved.getFromAccountId(),
+                saved.getToAccountId(),
+                saved.getAmount(),
+                Instant.now()
+        );
+
+        kafkaProducer.sendDepositNotification(event);
     } 
     
 
@@ -248,8 +268,17 @@ public class TransferService {
                 .type("WITHDRAWAL")
                 .build();
         Transaction saved = transferRepository.save(transaction);
-        String transactionId = String.valueOf(saved.getId());      
-        kafkaProducer.sendDepositNotification(request);
+        String transactionId = String.valueOf(saved.getId()); 
+        TransferEvent event = new TransferEvent(
+                saved.getId(),
+                saved.getUserId(),
+                saved.getFromAccountId(),
+                saved.getToAccountId(),
+                saved.getAmount(),
+                Instant.now()
+        );
+     
+        kafkaProducer.sendTransferNotification(event);
     }   
 
 

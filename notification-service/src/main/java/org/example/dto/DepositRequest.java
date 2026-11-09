@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class DepositRequest {
-    private Long id;
+    private Long transactionId;
     private String userId;
     private Long AccountId;
     private BigDecimal amount;

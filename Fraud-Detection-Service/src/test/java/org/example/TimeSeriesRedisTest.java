@@ -52,86 +52,184 @@ class TimeSeriesRedisTest {
         when(redisTemplate.opsForZSet()).thenReturn(transactions);
     }
 
+   
     @Test
     void shouldRecordTransactionsInTimeOrder() {
+        System.out.println("\n========== [TEST 1] Transaction Time Order ==========");
+
         redisService.recordTransaction(USER_ID, "TX001", 100.0);
         redisService.recordTransaction(USER_ID, "TX002", 200.0);
         redisService.recordTransaction(USER_ID, "TX003", 300.0);
 
-        ArgumentCaptor<String> values = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<Double> scores = ArgumentCaptor.forClass(Double.class);
-        verify(transactions, times(3)).add(eq(KEY), values.capture(), scores.capture());
+        ArgumentCaptor<String> values =
+                ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Double> scores =
+                ArgumentCaptor.forClass(Double.class);
 
-        assertEquals(List.of("TX001:100.0", "TX002:200.0", "TX003:300.0"), values.getAllValues());
-        assertTrue(scores.getAllValues().get(0) <= scores.getAllValues().get(1));
-        assertTrue(scores.getAllValues().get(1) <= scores.getAllValues().get(2));
+        verify(transactions, times(3))
+                .add(eq(KEY), values.capture(), scores.capture());
+
+        List<String> recordedValues = values.getAllValues();
+        List<Double> recordedScores = scores.getAllValues();
+
+        for (int i = 0; i < recordedValues.size(); i++) {
+            System.out.printf(
+                    "Transaction: %-15s | Timestamp: %.0f%n",
+                    recordedValues.get(i),
+                    recordedScores.get(i)
+            );
+        }
+
+        assertEquals(
+                List.of("TX001:100.0", "TX002:200.0", "TX003:300.0"),
+                recordedValues
+        );
+
+        assertTrue(recordedScores.get(0) <= recordedScores.get(1));
+        assertTrue(recordedScores.get(1) <= recordedScores.get(2));
+
+        System.out.println("[PASS] 3 transactions recorded in timestamp order");
     }
 
     @Test
     void shouldRemoveTransactionsOlderThan24Hours() {
+        System.out.println("\n========== [TEST 2] 24-Hour Window Cleanup ==========");
+
         redisService.recordTransaction(USER_ID, "NEW_TX", 200.0);
 
-        ArgumentCaptor<Double> score = ArgumentCaptor.forClass(Double.class);
-        verify(transactions).add(eq(KEY), eq("NEW_TX:200.0"), score.capture());
+        ArgumentCaptor<Double> score =
+                ArgumentCaptor.forClass(Double.class);
+
+        verify(transactions)
+                .add(eq(KEY), eq("NEW_TX:200.0"), score.capture());
+
+        double timestamp = score.getValue();
+        double cutoff = timestamp - Duration.ofHours(24).toMillis();
+
         verify(transactions).removeRangeByScore(
                 eq(KEY),
                 eq(0.0),
-                eq(score.getValue() - Duration.ofHours(24).toMillis())
+                eq(cutoff)
         );
+
+        System.out.printf("New transaction timestamp: %.0f%n", timestamp);
+        System.out.printf("24-hour cutoff timestamp:  %.0f%n", cutoff);
+        System.out.println("Verified Redis removeRangeByScore() invocation");
+
+        System.out.println("[PASS] 24-hour cleanup command verified");
     }
 
     @Test
     void shouldSet24HourTTL() {
+        System.out.println("\n========== [TEST 3] Redis TTL ==========");
+
         redisService.recordTransaction(USER_ID, "TX001", 100.0);
 
-        verify(redisTemplate).expire(KEY, Duration.ofHours(24));
+        verify(redisTemplate).expire(
+                KEY,
+                Duration.ofHours(24)
+        );
+
+        System.out.println("Redis Key: " + KEY);
+        System.out.println("Configured TTL: 24 hours (86400 seconds)");
+
+        System.out.println("[PASS] Redis TTL configuration verified");
     }
 
 
-    @Test
-    void shouldDetectAbnormalTransaction() {
-        when(transactions.count(eq(KEY), anyDouble(), anyDouble())).thenReturn(3L);
-        when(transactions.rangeByScore(eq(KEY), anyDouble(), anyDouble()))
-                .thenReturn(java.util.Set.of(
+    
+        @Test
+        void shouldDetectAbnormalTransaction() {
+
+                System.out.println("\n========== [TEST 4] FDS Abnormal Transaction Detection ==========");
+
+                // 1. 과거 거래 이력 Mock 설정
+                when(transactions.count(
+                        eq(KEY), anyDouble(), anyDouble()
+                )).thenReturn(3L);
+
+                when(transactions.rangeByScore(
+                        eq(KEY), anyDouble(), anyDouble()
+                )).thenReturn(java.util.Set.of(
                         "TX001:100.0",
                         "TX002:200.0",
                         "TX003:300.0"
                 ));
 
-        FdsGrpcServiceImpl grpcService = new FdsGrpcServiceImpl(redisService);
-        FdsVerifyRequest request = FdsVerifyRequest.newBuilder()
-                .setUserId(USER_ID)
-                .setAccountId(1L)
-                .setAmount(1_000_000.0)
-                .build();
+                System.out.println("[MOCK] Historical transaction count: 3");
+                System.out.println("[MOCK] TX001: 100.0");
+                System.out.println("[MOCK] TX002: 200.0");
+                System.out.println("[MOCK] TX003: 300.0");
+                System.out.println("[MOCK] Historical total amount: 600.0");
 
-        AtomicReference<FdsVerifyResponse> result = new AtomicReference<>();
-        AtomicReference<Throwable> error = new AtomicReference<>();
+                // 2. FDS 요청 생성
+                FdsGrpcServiceImpl grpcService =
+                        new FdsGrpcServiceImpl(redisService);
 
-        grpcService.verifyTransaction(
-                request,
-                new StreamObserver<FdsVerifyResponse>() {
-                    @Override
-                    public void onNext(FdsVerifyResponse response) {
-                        result.set(response);
-                    }
+                FdsVerifyRequest request = FdsVerifyRequest.newBuilder()
+                        .setUserId(USER_ID)
+                        .setAccountId(1L)
+                        .setAmount(1_000_000.0)
+                        .build();
 
-                    @Override
-                    public void onError(Throwable t) {
-                        error.set(t);
-                    }
+                System.out.println("\n[FDS REQUEST]");
+                System.out.println("User ID: " + request.getUserId());
+                System.out.println("Account ID: " + request.getAccountId());
+                System.out.println("Requested Amount: " + request.getAmount());
 
-                    @Override
-                    public void onCompleted() {
-                    }
-                }
-        );
+                // 3. FDS 검증 결과 수집
+                AtomicReference<FdsVerifyResponse> result =
+                        new AtomicReference<>();
 
-        assertNull(error.get(), "FDS error: " + error.get());
-        assertNotNull(result.get(), "FDS response is null");
-        assertFalse(result.get().getAllowed(), "Abnormal transaction should be blocked");
-        assertEquals("이번 거래를 포함하면 시간당 누적 금액 초과", result.get().getMessage());
-    }
+                AtomicReference<Throwable> error =
+                        new AtomicReference<>();
+
+                grpcService.verifyTransaction(
+                        request,
+                        new StreamObserver<FdsVerifyResponse>() {
+
+                                @Override
+                                public void onNext(FdsVerifyResponse response) {
+                                result.set(response);
+                                }
+
+                                @Override
+                                public void onError(Throwable t) {
+                                error.set(t);
+                                }
+
+                                @Override
+                                public void onCompleted() {
+                                System.out.println("[gRPC] Response completed");
+                                }
+                        }
+                );
+
+                // 4. 응답 검증
+                assertNull(error.get(), "FDS error: " + error.get());
+                assertNotNull(result.get(), "FDS response is null");
+
+                FdsVerifyResponse response = result.get();
+
+                System.out.println("\n[FDS RESPONSE]");
+                System.out.println("Allowed: " + response.getAllowed());
+                System.out.println("Message: " + response.getMessage());
+
+                // 5. 이상거래 차단 검증
+                assertFalse(
+                        response.getAllowed(),
+                        "Abnormal transaction should be blocked"
+                );
+
+                assertEquals(
+                        "이번 거래를 포함하면 시간당 누적 금액 초과",
+                        response.getMessage()
+                );
+
+                System.out.println("\n[PASS] Abnormal transaction blocked successfully");
+                System.out.println("[PASS] FDS rejection reason verified");
+                System.out.println("======================================================\n");
+        }
 
 
 

@@ -1,6 +1,6 @@
 package org.example.service;
 
-
+import org.example.dto.TransferEvent;
 import org.example.dto.TransferResponse;
 import org.example.dto.TransferRequest;
 
@@ -22,28 +22,57 @@ public class KafkaConsumer {
        
     }
 
+    
     @KafkaListener(
-    topics = "transfer-topic",
-    groupId = "fraud-detection-group"
+        topics = "transfer-topic",
+        groupId = "fraud-detection-group"
     )
-    public void listen(TransferRequest event){
+    public void listen(TransferEvent event) {
+
+        if (event.transactionId() == null) {
+            throw new IllegalArgumentException(
+                "Missing transactionId in transfer event"
+            );
+        }
+
         TransferResponse notif = new TransferResponse(
-                "transfer from account " + event.getFromAccountId() + " to account " + event.getToAccountId() + " completed successfully.",
-                "💸 $" + event.getAmount() + " transferred."
+            "transfer from account " + event.fromAccountId()
+                + " to account " + event.toAccountId()
+                + " completed successfully.",
+            "💸 $" + event.amount() + " transferred."
         );
+
         System.out.println("✅ Consumed Kafka message: " + notif);
 
-        redisTimeSeriesService.recordTransaction(event.getUserId(), String.valueOf(event.getTransactionId()), event.getAmount().doubleValue());
-        System.out.println("✅ Recorded transaction in Redis Time Series for user: " + event.getUserId() + ", transactionId: " + event.getTransactionId() + ", amount: " + event.getAmount());
-        
-        redisTimeSeriesService.recordIncomingTransaction(
-            event.getToAccountId(),
-            event.getFromAccountId(),
-            String.valueOf(event.getTransactionId()),
-            event.getAmount().doubleValue()
+        String transactionId = event.transactionId().toString();
+
+        redisTimeSeriesService.recordTransaction(
+            event.userId(),
+            transactionId,
+            event.amount().doubleValue()
         );
-        System.out.println("✅ Recorded incoming transaction in Redis Time Series for receiving account: " + event.getToAccountId() + ", from account: " + event.getFromAccountId() + ", transactionId: " + event.getTransactionId() + ", amount: " + event.getAmount());
-    }
+
+        System.out.println(
+            "✅ Recorded transaction in Redis for user: "
+            + event.userId()
+            + ", transactionId: " + transactionId
+            + ", amount: " + event.amount()
+        );
+
+        redisTimeSeriesService.recordIncomingTransaction(
+            event.toAccountId(),
+            event.fromAccountId(),
+            transactionId,
+            event.amount().doubleValue()
+        );
+
+        System.out.println(
+            "✅ Recorded incoming transaction in Redis for account: "
+            + event.toAccountId()
+            + ", from account: " + event.fromAccountId()
+            + ", transactionId: " + transactionId
+        );
+}
 
 
 }

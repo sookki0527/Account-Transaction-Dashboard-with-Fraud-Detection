@@ -1,10 +1,18 @@
 package org.example.dto;
 
-import lombok.Data;
 
-@Data
-public class TransferEvent {
-    private String fromAccountId;
-    private String toAccountId;
-    private double amount;
-}
+import java.math.BigDecimal;
+import java.time.Instant;
+
+
+
+public record TransferEvent(
+        Long transactionId,
+        String userId,
+        Long fromAccountId,
+        Long toAccountId,
+        BigDecimal amount,
+        Instant date
+        
+) {}
+
